@@ -154,15 +154,27 @@ InfluxDB.prototype.url = function (endpoint, options, query) {
 InfluxDB.prototype.queryDB = function (query, options, callback) {
   var args = resolveOptCallback(options, callback)
 
-  this.request.get({
+  if (callback !== undefined) {
+    this.request.get({
+      url: this.url('query', args.options, {q: query}),
+      json: true
+    }, this._parseCallback(args.callback))
+    return;
+  }
+
+  return this.request.get({
     url: this.url('query', args.options, {q: query}),
     json: true
-  }, this._parseCallback(args.callback))
+  });
 }
 
 // creates a new database
 InfluxDB.prototype.createDatabase = function (databaseName, callback) {
-  this.queryDB('create database "' + databaseName + '"', callback)
+  if (callback !== undefined) {
+      this.queryDB('create database "' + databaseName + '"', callback)
+      return;
+  }
+  return this.queryDB('create database "' + databaseName + '"');
 }
 
 InfluxDB.prototype.dropDatabase = function (databaseName, callback) {
@@ -242,15 +254,21 @@ InfluxDB.prototype.dropSeries = function (seriesId, callback) {
 InfluxDB.prototype.getUsers = function (callback) {
   var self = this
 
-  this.queryDB('show users', function (err, results) {
-    if (err) {
-      return callback(err, results)
-    }
-    return self._parseResults(results, function (err, results) {
-      return callback(err, results[0])
+  if (callback !== undefined) {
+    this.queryDB('show users', function (err, results) {
+      if (err) {
+        return callback(err, results)
+      }
+      return self._parseResults(results, function (err, results) {
+        return callback(err, results[0])
+      })
+    // return callback(err, results[0].series[0].values)
     })
-  // return callback(err, results[0].series[0].values)
-  })
+    return;
+  }
+
+  return this.queryDB('show user');
+
 }
 
 InfluxDB.prototype.createUser = function (username, password, isAdmin, callback) {
